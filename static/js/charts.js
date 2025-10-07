@@ -33,8 +33,7 @@
         maintainAspectRatio: false,
         scales: {
           x: {
-            type: 'time',
-            time: { unit: 'hour', tooltipFormat: 'yyyy-MM-dd HH:mm:ss' },
+            type: 'category',
             grid: { color: 'rgba(255,255,255,.06)' }
           },
           y: {
@@ -71,12 +70,13 @@
   function pushPoint(chart, ts, value) {
     if (!chart) return;
     const ds = chart.data.datasets[0];
-    chart.data.labels.push(ts);
-    ds.data.push({ x: ts, y: value });
+    const label = ts instanceof Date ? ts.toLocaleTimeString() : String(ts);
+    chart.data.labels.push(label);
+    ds.data.push(value);
 
     // Trim to 24h window
     const cutoff = Date.now() - WINDOW_MS;
-    while (chart.data.labels.length && new Date(chart.data.labels[0]).getTime() < cutoff) {
+    while (chart.data.labels.length && chart.data.labels.length > 288) { // ~24h at 5s
       chart.data.labels.shift();
       ds.data.shift();
     }
@@ -126,8 +126,9 @@
       if (vib) { vib.data.labels = []; vib.data.datasets[0].data = []; }
       (data.readings || []).forEach(r => {
         const ts = r.ts ? new Date(r.ts) : new Date();
-        if (temp) { temp.data.labels.push(ts); temp.data.datasets[0].data.push({ x: ts, y: Number(r.temperature) }); }
-        if (vib) { vib.data.labels.push(ts); vib.data.datasets[0].data.push({ x: ts, y: Number(r.vibration) }); }
+        const label = ts.toLocaleDateString() + ' ' + ts.toLocaleTimeString();
+        if (temp) { temp.data.labels.push(label); temp.data.datasets[0].data.push(Number(r.temperature)); }
+        if (vib) { vib.data.labels.push(label); vib.data.datasets[0].data.push(Number(r.vibration)); }
       });
       temp?.update('none');
       vib?.update('none');
